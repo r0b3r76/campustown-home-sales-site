@@ -1,31 +1,459 @@
 <!DOCTYPE html>
-<!-- A placeholder from the Home Sales template. Replace this file with your site's first page. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Under construction</title>
-  <!-- An empty icon, so the browser doesn't log an error looking for favicon.ico -->
+  <title>What a home costs near campus | College-town home sales</title>
+  <meta name="description" content="Sale prices, price per square foot and days on market for 35,000+ home sales near 11 university campuses, computed from the College-town home sales dataset.">
   <link rel="icon" href="data:,">
   <style>
-    :root { color-scheme: light dark; }
+    :root {
+      color-scheme: light;
+      --bg: #f6f5f1;
+      --surface: #fcfcfb;
+      --border: #e3e1da;
+      --grid: #ebe9e3;
+      --text: #0b0b0b;
+      --text-2: #52514e;
+      --text-3: #7a7873;
+      --series-1: #2a78d6;
+      --series-2: #eb6834;
+      --hero: #12304a;
+      --hero-text: #f3f6f9;
+      --accent-soft: #e8f0fb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #111110;
+        --surface: #1a1a19;
+        --border: #2e2e2b;
+        --grid: #2a2a27;
+        --text: #f0efec;
+        --text-2: #c3c2b7;
+        --text-3: #94938b;
+        --series-1: #3987e5;
+        --series-2: #d95926;
+        --hero: #0d2236;
+        --hero-text: #f0efec;
+        --accent-soft: #1d2a3a;
+      }
+    }
+    * { box-sizing: border-box; }
     body {
-      max-width: 40rem;
-      margin: 0 auto;
-      padding: 3rem 1rem;
-      font-family: system-ui, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       line-height: 1.5;
     }
-    footer { margin-top: 3rem; font-size: 0.875rem; opacity: 0.75; }
+    header.hero { background: var(--hero); color: var(--hero-text); padding: 3.5rem 1.25rem 3rem; }
+    .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem; }
+    header.hero .wrap { padding: 0; }
+    .eyebrow { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; opacity: .8; font-weight: 600; margin: 0 0 .75rem; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; margin: 0 0 1rem; max-width: 20ch; }
+    .lede { max-width: 46rem; font-size: 1.05rem; opacity: .9; margin: 0; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: .75rem; margin-top: 2rem; }
+    .kpi { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: .9rem 1rem; }
+    .kpi .v { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .kpi .l { font-size: .82rem; opacity: .8; }
+    section { margin: 2.5rem 0; }
+    h2 { font-size: 1.45rem; margin: 0 0 .35rem; }
+    .sub { color: var(--text-2); margin: 0 0 1rem; max-width: 50rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+    .controls label { font-size: .85rem; color: var(--text-2); margin-right: .25rem; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button, .chip {
+      font: inherit; font-size: .85rem; background: transparent; color: var(--text-2);
+      border: 0; padding: .4rem .8rem; cursor: pointer;
+    }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .chip { border: 1px solid var(--border); border-radius: 999px; }
+    .chip[aria-pressed="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; font-weight: 600; }
+    .legend { display: flex; gap: 1rem; font-size: .82rem; color: var(--text-2); margin: 0 0 .5rem; flex-wrap: wrap; }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: .4rem; vertical-align: -1px; background: var(--c); }
+    svg { display: block; width: 100%; height: auto; overflow: visible; }
+    svg text { fill: var(--text-2); font-size: 12px; font-family: inherit; }
+    svg .axis text { fill: var(--text-3); font-size: 11px; }
+    svg .grid line { stroke: var(--grid); }
+    svg .val { fill: var(--text); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+    .bar { transition: opacity .15s; }
+    .dim .bar { opacity: .35; }
+    .dim .bar.on { opacity: 1; }
+    .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+    .two h3 { font-size: 1rem; margin: 0 0 .2rem; }
+    .two .note { font-size: .8rem; color: var(--text-3); margin: .5rem 0 0; }
+    .mini-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .6rem; margin-bottom: 1rem; }
+    .mini-kpis div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .9rem; }
+    .mini-kpis b { display: block; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+    .mini-kpis span { font-size: .8rem; color: var(--text-2); }
+    .tip {
+      position: fixed; pointer-events: none; z-index: 10; opacity: 0;
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: .55rem .7rem; font-size: .82rem; box-shadow: 0 6px 20px rgba(0,0,0,.15);
+      min-width: 11rem; transition: opacity .1s;
+    }
+    .tip b { display: block; margin-bottom: .2rem; }
+    .tip .r { display: flex; justify-content: space-between; gap: 1rem; color: var(--text-2); }
+    .tip .r span:last-child { color: var(--text); font-variant-numeric: tabular-nums; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; font-variant-numeric: tabular-nums; }
+    th, td { padding: .5rem .45rem; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+    th { font-size: .78rem; color: var(--text-2); font-weight: 600; cursor: pointer; user-select: none; }
+    th button { all: unset; cursor: pointer; }
+    th[aria-sort="ascending"] button::after { content: " ▲"; }
+    th[aria-sort="descending"] button::after { content: " ▼"; }
+    tr.il td:first-child { font-weight: 600; }
+    tr.il td:first-child::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--series-2); margin-right: .4rem; }
+    .notes { columns: 2 22rem; column-gap: 2rem; color: var(--text-2); font-size: .92rem; }
+    .notes p { break-inside: avoid; margin: 0 0 .9rem; }
+    .notes b { color: var(--text); }
+    .callout { border-left: 4px solid var(--series-2); background: var(--surface); padding: 1rem 1.2rem; border-radius: 0 10px 10px 0; }
+    .callout p { margin: .3rem 0; }
+    footer { color: var(--text-3); font-size: .82rem; border-top: 1px solid var(--border); padding: 1.5rem 0 3rem; margin-top: 3rem; }
+    @media (max-width: 600px) { header.hero { padding-top: 2.5rem; } }
   </style>
 </head>
 <body>
-  <main>
-    <h1>This site is under construction</h1>
-    <p>It will show findings from the College-town home sales dataset.</p>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">College-town home sales &middot; <span id="span"></span></p>
+      <h1>What a home costs near campus</h1>
+      <p class="lede">Every number on this page is computed from <span id="kept"></span> completed home sales around 11 university campuses, from Davis to Gainesville. Compare 18 cities, see how prices change with distance from campus, and check how Champaign-Urbana stacks up.</p>
+      <div class="kpis" id="kpis"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section aria-labelledby="h-cities">
+      <h2 id="h-cities">How the 18 cities compare</h2>
+      <p class="sub">Each bar is one city. Pick a measure; hover a bar for the middle-half price range and the number of sales behind it.</p>
+      <div class="card">
+        <div class="controls">
+          <label id="metric-label">Measure</label>
+          <div class="seg" role="group" aria-labelledby="metric-label" id="metric"></div>
+        </div>
+        <div class="legend"><span style="--c: var(--series-2)">Illinois (UIUC) area</span><span style="--c: var(--series-1)">Other college towns</span></div>
+        <div id="city-chart"></div>
+        <p class="note" id="metric-note" style="font-size:.8rem;color:var(--text-3);margin:.5rem 0 0"></p>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-il">
+      <h2 id="h-il">Spotlight: Champaign-Urbana</h2>
+      <div class="callout" id="il-callout"></div>
+    </section>
+
+    <section aria-labelledby="h-campus">
+      <h2 id="h-campus">Explore one campus</h2>
+      <p class="sub">Choose a campus to see its numbers, how prices change with straight-line distance from the campus landmark, and the median price each quarter.</p>
+      <div class="controls"><div class="chips" id="campus-chips" role="group" aria-label="Campus"></div></div>
+      <div class="mini-kpis" id="campus-kpis"></div>
+      <div class="two">
+        <div class="card">
+          <h3>Median sale price by distance from campus</h3>
+          <div id="band-chart"></div>
+          <p class="note">Distance bands with fewer than 30 sales are left out, since a median of a handful of sales is mostly noise.</p>
+        </div>
+        <div class="card">
+          <h3>Median sale price by quarter</h3>
+          <div id="trend-chart"></div>
+          <p class="note">By closing date. The first quarter of 2023 is left out because the data starts in late March 2023.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-table">
+      <h2 id="h-table">All cities, side by side</h2>
+      <p class="sub">Click a column heading to sort.</p>
+      <div class="card table-wrap">
+        <table id="city-table"><thead></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-notes">
+      <h2 id="h-notes">How these numbers were made</h2>
+      <div class="notes" id="notes"></div>
+    </section>
+
+    <footer>
+      Data: College-town home sales dataset, version 1.0 (2026). University of Illinois-Deloitte Foundation Center for Business Emerging Technologies. Data collected March 2026.
+      Summary numbers are produced by <code>scripts/build_site_data.py</code> from <code>data/college_town_home_sales.csv</code>.
+    </footer>
   </main>
-  <footer>
-    <p>Data: College-town home sales dataset, version 1.0 (2026). University of Illinois-Deloitte Foundation Center for Business Emerging Technologies. Data collected March 2026.</p>
-  </footer>
+
+  <div class="tip" id="tip" role="tooltip"></div>
+
+  <script>
+  const D = /*DATA_START*/{"rows_total":35442,"rows_kept":35371,"excluded_low":40,"excluded_high":31,"low":10000,"high":5000000,"first_sale":"2023-03-27","last_sale":"2026-03-25","n_cities":18,"n_campuses":11,"overall":{"sales":35371,"median_price":410000.0,"p25":295000.0,"p75":600000.0,"median_ppsf":211.9,"median_dom":11.0,"dom_n":28028,"pct_no_list":17.3,"median_miles":3.4,"median_sqft":1922.0,"median_year":1983.0},"cities":[{"city":"Davis","state":"CA","campus":"UC Davis","sales":941,"median_price":889000.0,"p25":745000.0,"p75":1150000.0,"median_ppsf":492.7,"median_dom":11.0,"dom_n":792,"pct_no_list":15.3,"median_miles":2.0,"median_sqft":1842.0,"median_year":1978.0},{"city":"Pittsboro","state":"NC","campus":"UNC","sales":92,"median_price":876985.5,"p25":678000.0,"p75":1223125.0,"median_ppsf":301.9,"median_dom":38.0,"dom_n":57,"pct_no_list":38.0,"median_miles":8.0,"median_sqft":2970.0,"median_year":2015.0},{"city":"Chapel Hill","state":"NC","campus":"UNC","sales":2705,"median_price":734000.0,"p25":550000.0,"p75":975000.0,"median_ppsf":276.8,"median_dom":10.0,"dom_n":2202,"pct_no_list":18.0,"median_miles":3.9,"median_sqft":2677.0,"median_year":1997.0},{"city":"Charlottesville","state":"VA","campus":"Virginia","sales":2759,"median_price":613000.0,"p25":465000.0,"p75":865000.0,"median_ppsf":269.5,"median_dom":7.0,"dom_n":2049,"pct_no_list":25.2,"median_miles":3.4,"median_sqft":2375.5,"median_year":1990.0},{"city":"Middleton","state":"WI","campus":"Wisconsin","sales":645,"median_price":611000.0,"p25":475000.0,"p75":825000.0,"median_ppsf":256.3,"median_dom":8.0,"dom_n":560,"pct_no_list":13.0,"median_miles":5.7,"median_sqft":2497.0,"median_year":2000.0},{"city":"Carrboro","state":"NC","campus":"UNC","sales":205,"median_price":605000.0,"p25":440000.0,"p75":745000.0,"median_ppsf":316.4,"median_dom":7.0,"dom_n":149,"pct_no_list":26.8,"median_miles":1.9,"median_sqft":1801.5,"median_year":1984.0},{"city":"Ann Arbor","state":"MI","campus":"Michigan","sales":3007,"median_price":572000.0,"p25":440000.0,"p75":765000.0,"median_ppsf":259.2,"median_dom":7.0,"dom_n":2448,"pct_no_list":16.8,"median_miles":2.7,"median_sqft":2221.0,"median_year":1966.0},{"city":"Newberry","state":"FL","campus":"Florida","sales":152,"median_price":439995.0,"p25":411500.0,"p75":475365.0,"median_ppsf":184.7,"median_dom":87.0,"dom_n":133,"pct_no_list":10.5,"median_miles":8.6,"median_sqft":2662.0,"median_year":2023.0},{"city":"State College","state":"PA","campus":"Penn State","sales":1348,"median_price":430000.0,"p25":350000.0,"p75":557125.0,"median_ppsf":208.0,"median_dom":8.0,"dom_n":908,"pct_no_list":31.7,"median_miles":2.1,"median_sqft":2124.0,"median_year":1982.0},{"city":"Madison","state":"WI","campus":"Wisconsin","sales":5061,"median_price":421000.0,"p25":357500.0,"p75":527000.0,"median_ppsf":248.1,"median_dom":7.0,"dom_n":4068,"pct_no_list":19.3,"median_miles":4.6,"median_sqft":1737.0,"median_year":1965.0},{"city":"Savoy","state":"IL","campus":"Illinois","sales":247,"median_price":402700.0,"p25":343000.0,"p75":481000.0,"median_ppsf":186.7,"median_dom":10.5,"dom_n":212,"pct_no_list":13.4,"median_miles":3.8,"median_sqft":2151.0,"median_year":2010.0},{"city":"West Lafayette","state":"IN","campus":"Purdue","sales":1559,"median_price":379900.0,"p25":305900.0,"p75":475000.0,"median_ppsf":178.3,"median_dom":11.0,"dom_n":1293,"pct_no_list":8.5,"median_miles":3.4,"median_sqft":2194.0,"median_year":2002.0},{"city":"Athens","state":"GA","campus":"Georgia","sales":2805,"median_price":370000.0,"p25":300000.0,"p75":495900.0,"median_ppsf":196.8,"median_dom":27.0,"dom_n":2278,"pct_no_list":15.9,"median_miles":3.7,"median_sqft":1902.0,"median_year":1992.0},{"city":"Gainesville","state":"FL","campus":"Florida","sales":5467,"median_price":350000.0,"p25":259900.0,"p75":450000.0,"median_ppsf":203.5,"median_dom":25.0,"dom_n":4372,"pct_no_list":18.7,"median_miles":4.3,"median_sqft":1735.0,"median_year":1987.0},{"city":"Iowa City","state":"IA","campus":"Iowa","sales":1909,"median_price":342000.0,"p25":257500.0,"p75":460000.0,"median_ppsf":175.9,"median_dom":23.5,"dom_n":1248,"pct_no_list":9.4,"median_miles":2.2,"median_sqft":2034.0,"median_year":1976.0},{"city":"Lafayette","state":"IN","campus":"Purdue","sales":3053,"median_price":260000.0,"p25":200000.0,"p75":330000.0,"median_ppsf":163.1,"median_dom":9.0,"dom_n":2603,"pct_no_list":4.9,"median_miles":4.1,"median_sqft":1649.0,"median_year":1979.0},{"city":"Champaign","state":"IL","campus":"Illinois","sales":2285,"median_price":240000.0,"p25":162000.0,"p75":350000.0,"median_ppsf":149.7,"median_dom":7.0,"dom_n":1784,"pct_no_list":21.1,"median_miles":3.0,"median_sqft":1645.0,"median_year":1969.0},{"city":"Urbana","state":"IL","campus":"Illinois","sales":1131,"median_price":229900.0,"p25":150000.0,"p75":309500.0,"median_ppsf":144.3,"median_dom":8.0,"dom_n":872,"pct_no_list":22.0,"median_miles":2.2,"median_sqft":1550.5,"median_year":1966.0}],"campuses":{"All":{"sales":35371,"median_price":410000.0,"p25":295000.0,"p75":600000.0,"median_ppsf":211.9,"median_dom":11.0,"dom_n":28028,"pct_no_list":17.3,"median_miles":3.4,"median_sqft":1922.0,"median_year":1983.0,"bands":[{"band":"Under 1 mi","sales":1484,"median_price":479000.0},{"band":"1\u20132 mi","sales":5342,"median_price":427500.0},{"band":"2\u20133 mi","sales":7536,"median_price":380000.0},{"band":"3\u20135 mi","sales":11209,"median_price":375000.0},{"band":"5\u201310 mi","sales":9555,"median_price":442500.0},{"band":"10+ mi","sales":245,"median_price":575000.0}],"quarters":[{"q":"2023Q2","sales":3787,"median_price":410000.0},{"q":"2023Q3","sales":3114,"median_price":395000.0},{"q":"2023Q4","sales":2458,"median_price":379900.0},{"q":"2024Q1","sales":2125,"median_price":395000.0},{"q":"2024Q2","sales":3632,"median_price":424900.0},{"q":"2024Q3","sales":3240,"median_price":415000.0},{"q":"2024Q4","sales":2635,"median_price":400000.0},{"q":"2025Q1","sales":2152,"median_price":415000.0},{"q":"2025Q2","sales":3967,"median_price":435000.0},{"q":"2025Q3","sales":3319,"median_price":422000.0},{"q":"2025Q4","sales":2840,"median_price":415000.0},{"q":"2026Q1","sales":1872,"median_price":405000.0}],"cities":["Ann Arbor","Athens","Carrboro","Champaign","Chapel Hill","Charlottesville","Davis","Gainesville","Iowa City","Lafayette","Madison","Middleton","Newberry","Pittsboro","Savoy","State College","Urbana","West Lafayette"]},"Florida":{"sales":5619,"median_price":355000.0,"p25":261500.0,"p75":450000.0,"median_ppsf":203.3,"median_dom":25.0,"dom_n":4505,"pct_no_list":18.5,"median_miles":4.4,"median_sqft":1757.0,"median_year":1988.0,"bands":[{"band":"Under 1 mi","sales":135,"median_price":408500.0},{"band":"1\u20132 mi","sales":473,"median_price":355000.0},{"band":"2\u20133 mi","sales":951,"median_price":261000.0},{"band":"3\u20135 mi","sales":1757,"median_price":310000.0},{"band":"5\u201310 mi","sales":2270,"median_price":416500.0},{"band":"10+ mi","sales":33,"median_price":450000.0}],"quarters":[{"q":"2023Q2","sales":602,"median_price":370308.5},{"q":"2023Q3","sales":439,"median_price":354000.0},{"q":"2023Q4","sales":398,"median_price":328750.0},{"q":"2024Q1","sales":378,"median_price":369999.5},{"q":"2024Q2","sales":614,"median_price":364950.0},{"q":"2024Q3","sales":463,"median_price":352500.0},{"q":"2024Q4","sales":407,"median_price":345000.0},{"q":"2025Q1","sales":385,"median_price":360000.0},{"q":"2025Q2","sales":642,"median_price":366000.0},{"q":"2025Q3","sales":480,"median_price":350000.0},{"q":"2025Q4","sales":443,"median_price":356500.0},{"q":"2026Q1","sales":321,"median_price":340000.0}],"cities":["Gainesville","Newberry"]},"Georgia":{"sales":2805,"median_price":370000.0,"p25":300000.0,"p75":495900.0,"median_ppsf":196.8,"median_dom":27.0,"dom_n":2278,"pct_no_list":15.9,"median_miles":3.7,"median_sqft":1902.0,"median_year":1992.0,"bands":[{"band":"Under 1 mi","sales":107,"median_price":385000.0},{"band":"1\u20132 mi","sales":453,"median_price":420000.0},{"band":"2\u20133 mi","sales":390,"median_price":389625.0},{"band":"3\u20135 mi","sales":1195,"median_price":347000.0},{"band":"5\u201310 mi","sales":660,"median_price":394227.5},{"band":"10+ mi","sales":0,"median_price":null}],"quarters":[{"q":"2023Q2","sales":271,"median_price":375000.0},{"q":"2023Q3","sales":247,"median_price":355000.0},{"q":"2023Q4","sales":186,"median_price":389352.5},{"q":"2024Q1","sales":221,"median_price":355000.0},{"q":"2024Q2","sales":331,"median_price":379680.0},{"q":"2024Q3","sales":229,"median_price":375000.0},{"q":"2024Q4","sales":209,"median_price":360000.0},{"q":"2025Q1","sales":198,"median_price":369450.0},{"q":"2025Q2","sales":305,"median_price":385000.0},{"q":"2025Q3","sales":234,"median_price":366250.0},{"q":"2025Q4","sales":211,"median_price":359000.0},{"q":"2026Q1","sales":148,"median_price":356250.0}],"cities":["Athens"]},"Illinois":{"sales":3663,"median_price":245000.0,"p25":163500.0,"p75":350000.0,"median_ppsf":150.3,"median_dom":7.0,"dom_n":2868,"pct_no_list":20.9,"median_miles":2.8,"median_sqft":1660.0,"median_year":1971.0,"bands":[{"band":"Under 1 mi","sales":134,"median_price":316000.0},{"band":"1\u20132 mi","sales":755,"median_price":175000.0},{"band":"2\u20133 mi","sales":1120,"median_price":215000.0},{"band":"3\u20135 mi","sales":1440,"median_price":289500.0},{"band":"5\u201310 mi","sales":214,"median_price":485000.0},{"band":"10+ mi","sales":0,"median_price":null}],"quarters":[{"q":"2023Q2","sales":389,"median_price":228000.0},{"q":"2023Q3","sales":373,"median_price":230000.0},{"q":"2023Q4","sales":275,"median_price":220000.0},{"q":"2024Q1","sales":208,"median_price":205000.0},{"q":"2024Q2","sales":338,"median_price":250000.0},{"q":"2024Q3","sales":385,"median_price":265000.0},{"q":"2024Q4","sales":284,"median_price":235875.0},{"q":"2025Q1","sales":206,"median_price":249900.0},{"q":"2025Q2","sales":356,"median_price":275000.0},{"q":"2025Q3","sales":351,"median_price":271000.0},{"q":"2025Q4","sales":266,"median_price":238750.0},{"q":"2026Q1","sales":205,"median_price":235000.0}],"cities":["Champaign","Savoy","Urbana"]},"Iowa":{"sales":1909,"median_price":342000.0,"p25":257500.0,"p75":460000.0,"median_ppsf":175.9,"median_dom":23.5,"dom_n":1248,"pct_no_list":9.4,"median_miles":2.2,"median_sqft":2034.0,"median_year":1976.0,"bands":[{"band":"Under 1 mi","sales":171,"median_price":335000.0},{"band":"1\u20132 mi","sales":635,"median_price":310000.0},{"band":"2\u20133 mi","sales":658,"median_price":300000.0},{"band":"3\u20135 mi","sales":415,"median_price":479900.0},{"band":"5\u201310 mi","sales":30,"median_price":387500.0},{"band":"10+ mi","sales":0,"median_price":null}],"quarters":[{"q":"2023Q2","sales":223,"median_price":325000.0},{"q":"2023Q3","sales":165,"median_price":339000.0},{"q":"2023Q4","sales":123,"median_price":295000.0},{"q":"2024Q1","sales":89,"median_price":315000.0},{"q":"2024Q2","sales":209,"median_price":350000.0},{"q":"2024Q3","sales":177,"median_price":365000.0},{"q":"2024Q4","sales":115,"median_price":325000.0},{"q":"2025Q1","sales":100,"median_price":343600.0},{"q":"2025Q2","sales":257,"median_price":375000.0},{"q":"2025Q3","sales":198,"median_price":356250.0},{"q":"2025Q4","sales":151,"median_price":350000.0},{"q":"2026Q1","sales":94,"median_price":321695.0}],"cities":["Iowa City"]},"Michigan":{"sales":3007,"median_price":572000.0,"p25":440000.0,"p75":765000.0,"median_ppsf":259.2,"median_dom":7.0,"dom_n":2448,"pct_no_list":16.8,"median_miles":2.7,"median_sqft":2221.0,"median_year":1966.0,"bands":[{"band":"Under 1 mi","sales":179,"median_price":700000.0},{"band":"1\u20132 mi","sales":794,"median_price":575000.0},{"band":"2\u20133 mi","sales":788,"median_price":505000.0},{"band":"3\u20135 mi","sales":832,"median_price":600000.0},{"band":"5\u201310 mi","sales":411,"median_price":620000.0},{"band":"10+ mi","sales":3,"median_price":450000.0}],"quarters":[{"q":"2023Q2","sales":397,"median_price":571000.0},{"q":"2023Q3","sales":286,"median_price":552875.0},{"q":"2023Q4","sales":218,"median_price":528500.0},{"q":"2024Q1","sales":151,"median_price":535000.0},{"q":"2024Q2","sales":263,"median_price":570000.0},{"q":"2024Q3","sales":278,"median_price":600000.0},{"q":"2024Q4","sales":215,"median_price":549000.0},{"q":"2025Q1","sales":175,"median_price":580000.0},{"q":"2025Q2","sales":341,"median_price":610000.0},{"q":"2025Q3","sales":308,"median_price":573500.0},{"q":"2025Q4","sales":223,"median_price":580000.0},{"q":"2026Q1","sales":138,"median_price":564000.0}],"cities":["Ann Arbor"]},"Penn State":{"sales":1348,"median_price":430000.0,"p25":350000.0,"p75":557125.0,"median_ppsf":208.0,"median_dom":8.0,"dom_n":908,"pct_no_list":31.7,"median_miles":2.1,"median_sqft":2124.0,"median_year":1982.0,"bands":[{"band":"Under 1 mi","sales":219,"median_price":430000.0},{"band":"1\u20132 mi","sales":363,"median_price":422000.0},{"band":"2\u20133 mi","sales":547,"median_price":450000.0},{"band":"3\u20135 mi","sales":219,"median_price":390000.0},{"band":"5\u201310 mi","sales":0,"median_price":null},{"band":"10+ mi","sales":0,"median_price":null}],"quarters":[{"q":"2023Q2","sales":152,"median_price":426500.0},{"q":"2023Q3","sales":137,"median_price":415000.0},{"q":"2023Q4","sales":88,"median_price":385000.0},{"q":"2024Q1","sales":78,"median_price":427500.0},{"q":"2024Q2","sales":139,"median_price":439000.0},{"q":"2024Q3","sales":120,"median_price":424000.0},{"q":"2024Q4","sales":95,"median_price":415000.0},{"q":"2025Q1","sales":67,"median_price":415000.0},{"q":"2025Q2","sales":164,"median_price":451500.0},{"q":"2025Q3","sales":124,"median_price":470000.0},{"q":"2025Q4","sales":104,"median_price":414000.0},{"q":"2026Q1","sales":66,"median_price":485000.0}],"cities":["State College"]},"Purdue":{"sales":4612,"median_price":299900.0,"p25":225875.0,"p75":395000.0,"median_ppsf":168.4,"median_dom":10.0,"dom_n":3896,"pct_no_list":6.1,"median_miles":3.8,"median_sqft":1824.0,"median_year":1992.0,"bands":[{"band":"Under 1 mi","sales":102,"median_price":405500.0},{"band":"1\u20132 mi","sales":340,"median_price":286500.0},{"band":"2\u20133 mi","sales":1008,"median_price":233000.0},{"band":"3\u20135 mi","sales":1703,"median_price":277000.0},{"band":"5\u201310 mi","sales":1393,"median_price":340000.0},{"band":"10+ mi","sales":66,"median_price":360500.0}],"quarters":[{"q":"2023Q2","sales":428,"median_price":285950.0},{"q":"2023Q3","sales":408,"median_price":277500.0},{"q":"2023Q4","sales":321,"median_price":267000.0},{"q":"2024Q1","sales":270,"median_price":280000.0},{"q":"2024Q2","sales":445,"median_price":303050.0},{"q":"2024Q3","sales":424,"median_price":310000.0},{"q":"2024Q4","sales":381,"median_price":305000.0},{"q":"2025Q1","sales":274,"median_price":303500.0},{"q":"2025Q2","sales":507,"median_price":320000.0},{"q":"2025Q3","sales":479,"median_price":305000.0},{"q":"2025Q4","sales":375,"median_price":290000.0},{"q":"2026Q1","sales":278,"median_price":302000.0}],"cities":["Lafayette","West Lafayette"]},"UC Davis":{"sales":941,"median_price":889000.0,"p25":745000.0,"p75":1150000.0,"median_ppsf":492.7,"median_dom":11.0,"dom_n":792,"pct_no_list":15.3,"median_miles":2.0,"median_sqft":1842.0,"median_year":1978.0,"bands":[{"band":"Under 1 mi","sales":76,"median_price":925000.0},{"band":"1\u20132 mi","sales":358,"median_price":841000.0},{"band":"2\u20133 mi","sales":441,"median_price":899000.0},{"band":"3\u20135 mi","sales":58,"median_price":1260000.0},{"band":"5\u201310 mi","sales":8,"median_price":1593867.0},{"band":"10+ mi","sales":0,"median_price":null}],"quarters":[{"q":"2023Q2","sales":110,"median_price":950000.0},{"q":"2023Q3","sales":81,"median_price":861000.0},{"q":"2023Q4","sales":56,"median_price":800000.0},{"q":"2024Q1","sales":62,"median_price":895000.0},{"q":"2024Q2","sales":97,"median_price":965000.0},{"q":"2024Q3","sales":86,"median_price":1000000.0},{"q":"2024Q4","sales":50,"median_price":782000.0},{"q":"2025Q1","sales":61,"median_price":925000.0},{"q":"2025Q2","sales":121,"median_price":902000.0},{"q":"2025Q3","sales":92,"median_price":879250.0},{"q":"2025Q4","sales":73,"median_price":815000.0},{"q":"2026Q1","sales":44,"median_price":798000.0}],"cities":["Davis"]},"UNC":{"sales":3002,"median_price":725000.0,"p25":545250.0,"p75":968959.8,"median_ppsf":280.2,"median_dom":10.0,"dom_n":2408,"pct_no_list":19.3,"median_miles":3.8,"median_sqft":2612.5,"median_year":1997.0,"bands":[{"band":"Under 1 mi","sales":123,"median_price":950000.0},{"band":"1\u20132 mi","sales":419,"median_price":750000.0},{"band":"2\u20133 mi","sales":543,"median_price":700000.0},{"band":"3\u20135 mi","sales":867,"median_price":735000.0},{"band":"5\u201310 mi","sales":963,"median_price":694000.0},{"band":"10+ mi","sales":87,"median_price":750000.0}],"quarters":[{"q":"2023Q2","sales":360,"median_price":725000.0},{"q":"2023Q3","sales":248,"median_price":705000.0},{"q":"2023Q4","sales":189,"median_price":683000.0},{"q":"2024Q1","sales":197,"median_price":745000.0},{"q":"2024Q2","sales":314,"median_price":757250.0},{"q":"2024Q3","sales":246,"median_price":750000.0},{"q":"2024Q4","sales":208,"median_price":735000.0},{"q":"2025Q1","sales":196,"median_price":705750.0},{"q":"2025Q2","sales":340,"median_price":752000.0},{"q":"2025Q3","sales":267,"median_price":705000.0},{"q":"2025Q4","sales":257,"median_price":662700.0},{"q":"2026Q1","sales":152,"median_price":682500.0}],"cities":["Carrboro","Chapel Hill","Pittsboro"]},"Virginia":{"sales":2759,"median_price":613000.0,"p25":465000.0,"p75":865000.0,"median_ppsf":269.5,"median_dom":7.0,"dom_n":2049,"pct_no_list":25.2,"median_miles":3.4,"median_sqft":2375.5,"median_year":1990.0,"bands":[{"band":"Under 1 mi","sales":153,"median_price":580000.0},{"band":"1\u20132 mi","sales":466,"median_price":590000.0},{"band":"2\u20133 mi","sales":606,"median_price":570378.5},{"band":"3\u20135 mi","sales":618,"median_price":690000.0},{"band":"5\u201310 mi","sales":862,"median_price":645000.0},{"band":"10+ mi","sales":54,"median_price":493000.0}],"quarters":[{"q":"2023Q2","sales":331,"median_price":544500.0},{"q":"2023Q3","sales":209,"median_price":595000.0},{"q":"2023Q4","sales":170,"median_price":589000.0},{"q":"2024Q1","sales":178,"median_price":588576.0},{"q":"2024Q2","sales":310,"median_price":628250.0},{"q":"2024Q3","sales":247,"median_price":625000.0},{"q":"2024Q4","sales":228,"median_price":604000.0},{"q":"2025Q1","sales":164,"median_price":633201.0},{"q":"2025Q2","sales":320,"median_price":667500.0},{"q":"2025Q3","sales":226,"median_price":600000.0},{"q":"2025Q4","sales":241,"median_price":700000.0},{"q":"2026Q1","sales":122,"median_price":631000.0}],"cities":["Charlottesville"]},"Wisconsin":{"sales":5706,"median_price":434010.0,"p25":365000.0,"p75":556875.0,"median_ppsf":249.2,"median_dom":7.0,"dom_n":4628,"pct_no_list":18.6,"median_miles":4.8,"median_sqft":1784.0,"median_year":1968.0,"bands":[{"band":"Under 1 mi","sales":85,"median_price":678000.0},{"band":"1\u20132 mi","sales":286,"median_price":600000.0},{"band":"2\u20133 mi","sales":484,"median_price":539500.0},{"band":"3\u20135 mi","sales":2105,"median_price":399900.0},{"band":"5\u201310 mi","sales":2744,"median_price":435000.0},{"band":"10+ mi","sales":2,"median_price":591500.0}],"quarters":[{"q":"2023Q2","sales":524,"median_price":402291.0},{"q":"2023Q3","sales":521,"median_price":410000.0},{"q":"2023Q4","sales":434,"median_price":399950.0},{"q":"2024Q1","sales":293,"median_price":420000.0},{"q":"2024Q2","sales":572,"median_price":450000.0},{"q":"2024Q3","sales":585,"median_price":432000.0},{"q":"2024Q4","sales":443,"median_price":421000.0},{"q":"2025Q1","sales":326,"median_price":425000.0},{"q":"2025Q2","sales":614,"median_price":465000.0},{"q":"2025Q3","sales":560,"median_price":450000.0},{"q":"2025Q4","sales":496,"median_price":445000.0},{"q":"2026Q1","sales":304,"median_price":455000.0}],"cities":["Madison","Middleton"]}}}/*DATA_END*/;
+
+  // ---------- helpers ----------
+  const NS = "http://www.w3.org/2000/svg";
+  const fmt = n => n == null ? "–" : n.toLocaleString("en-US");
+  const money = n => n == null ? "–" : "$" + Math.round(n).toLocaleString("en-US");
+  const moneyK = n => n >= 1e6 ? "$" + (n / 1e6).toFixed(n % 1e6 ? 1 : 0) + "M" : "$" + Math.round(n / 1000) + "K";
+  const days = n => n == null ? "–" : (Number.isInteger(n) ? n : n.toFixed(1)) + (n === 1 ? " day" : " days");
+  const isIL = c => c.campus === "Illinois";
+  function el(tag, attrs = {}, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function niceMax(v) {
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v) return m * p;
+    return 10 * p;
+  }
+  // a bar whose data end is rounded (4px) and whose baseline end is square
+  function barPath(x0, y, x1, h, r = 4, horizontal = true) {
+    if (horizontal) {
+      const w = x1 - x0; r = Math.min(r, w / 2, h / 2);
+      return `M${x0},${y}H${x1 - r}Q${x1},${y} ${x1},${y + r}V${y + h - r}Q${x1},${y + h} ${x1 - r},${y + h}H${x0}Z`;
+    }
+    // vertical: x0=left, y=top, x1=width, h=height to baseline
+    const w = x1; r = Math.min(r, w / 2, h / 2);
+    return `M${x0},${y + h}V${y + r}Q${x0},${y} ${x0 + r},${y}H${x0 + w - r}Q${x0 + w},${y} ${x0 + w},${y + r}V${y + h}Z`;
+  }
+
+  // ---------- tooltip ----------
+  const tip = document.getElementById("tip");
+  function showTip(evt, title, rows) {
+    tip.innerHTML = `<b>${title}</b>` + rows.map(([k, v]) => `<div class="r"><span>${k}</span><span>${v}</span></div>`).join("");
+    tip.style.opacity = 1;
+    const pad = 14, r = tip.getBoundingClientRect();
+    let x = evt.clientX + pad, y = evt.clientY + pad;
+    if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - pad;
+    if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - pad;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  const hideTip = () => (tip.style.opacity = 0);
+
+  // ---------- header ----------
+  const O = D.overall;
+  const span = d => new Date(d + "T00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  document.getElementById("span").textContent = `${span(D.first_sale)} – ${span(D.last_sale)}`;
+  document.getElementById("kept").textContent = fmt(D.rows_kept);
+  document.getElementById("kpis").innerHTML = [
+    [fmt(D.rows_kept), "home sales analysed"],
+    [D.n_cities + " cities", `around ${D.n_campuses} campuses`],
+    [money(O.median_price), "median sale price"],
+    ["$" + Math.round(O.median_ppsf), "median price per sq ft"],
+    [days(O.median_dom), "median time to an accepted offer"],
+  ].map(([v, l]) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+
+  // ---------- city bar chart ----------
+  const METRICS = {
+    median_price: { label: "Median price", fmt: money, axis: moneyK,
+      note: "Median sale price of all sales in the city that pass the price rule." },
+    median_ppsf: { label: "Price per sq ft", fmt: v => "$" + Math.round(v), axis: v => "$" + v,
+      note: "Median of sale price divided by finished living area, for homes with a living area above 0 sq ft." },
+    median_dom: { label: "Days on market", fmt: days, axis: v => v,
+      note: "Median days from listing to an accepted offer (contract date minus list date), only for sales that have both dates. Homes sold without a listing are not counted as zero." },
+  };
+  let metric = "median_price";
+  const metricBox = document.getElementById("metric");
+  for (const key in METRICS) {
+    const b = document.createElement("button");
+    b.textContent = METRICS[key].label; b.dataset.k = key;
+    b.setAttribute("aria-pressed", key === metric);
+    b.onclick = () => { metric = key; [...metricBox.children].forEach(x => x.setAttribute("aria-pressed", x.dataset.k === key)); drawCities(); };
+    metricBox.appendChild(b);
+  }
+
+  function drawCities() {
+    const M = METRICS[metric];
+    const rows = [...D.cities].filter(c => c[metric] != null).sort((a, b) => b[metric] - a[metric]);
+    const host = document.getElementById("city-chart"); host.innerHTML = "";
+    const W = 760, left = 150, right = 70, rowH = 26, barH = 16, top = 22;
+    const H = top + rows.length * rowH + 4;
+    const max = niceMax(Math.max(...rows.map(r => r[metric])));
+    const x = v => left + (v / max) * (W - left - right);
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${M.label} by city` }, host);
+    const g = el("g", { class: "grid axis" }, svg);
+    for (let i = 0; i <= 4; i++) {
+      const v = max * i / 4, xx = x(v);
+      el("line", { x1: xx, x2: xx, y1: top - 4, y2: H - 4 }, g);
+      el("text", { x: xx, y: 12, "text-anchor": "middle" }, g).textContent = M.axis(v);
+    }
+    const bars = el("g", {}, svg);
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + (rowH - barH) / 2;
+      const grp = el("g", {}, bars);
+      el("text", { x: left - 10, y: y + barH / 2 + 4, "text-anchor": "end", style: isIL(r) ? "font-weight:600;fill:var(--text)" : "" }, grp).textContent = `${r.city}, ${r.state}`;
+      el("path", { class: "bar", d: barPath(left, y, Math.max(x(r[metric]), left + 2), barH), fill: isIL(r) ? "var(--series-2)" : "var(--series-1)" }, grp);
+      el("text", { class: "val", x: x(r[metric]) + 6, y: y + barH / 2 + 4 }, grp).textContent = M.fmt(r[metric]);
+      const hit = el("rect", { x: 0, y: top + i * rowH, width: W, height: rowH, fill: "transparent" }, grp);
+      const rowsTip = [
+        ["Median price", money(r.median_price)],
+        ["Middle half", `${moneyK(r.p25)} – ${moneyK(r.p75)}`],
+        ["Price per sq ft", "$" + Math.round(r.median_ppsf)],
+        ["Days on market", days(r.median_dom)],
+        ["Sales", fmt(r.sales)],
+        ["Campus", r.campus],
+      ];
+      hit.addEventListener("mousemove", e => { bars.classList.add("dim"); grp.querySelector(".bar").classList.add("on"); showTip(e, `${r.city}, ${r.state}`, rowsTip); });
+      hit.addEventListener("mouseleave", () => { bars.classList.remove("dim"); grp.querySelector(".bar").classList.remove("on"); hideTip(); });
+    });
+    document.getElementById("metric-note").textContent = M.note;
+  }
+  drawCities();
+
+  // ---------- Champaign-Urbana spotlight ----------
+  (function () {
+    const by = n => D.cities.find(c => c.city === n);
+    const ch = by("Champaign"), ur = by("Urbana"), sv = by("Savoy");
+    const rankP = [...D.cities].sort((a, b) => a.median_price - b.median_price);
+    const cheapest = rankP[0], second = rankP[1];
+    const il = D.campuses.Illinois;
+    const ratio = (O.median_price / il.median_price).toFixed(1);
+    const davis = by("Davis");
+    const dRatio = (davis.median_price / il.median_price).toFixed(1);
+    document.getElementById("il-callout").innerHTML = `
+      <p><b>${cheapest.city} and ${second.city} are the two least expensive cities in the dataset.</b>
+      ${cheapest.city}'s median sale is ${money(cheapest.median_price)} and ${second.city}'s is ${money(second.median_price)}, against ${money(O.median_price)} across all ${D.n_cities} cities.
+      The median home near the Illinois campus sold for ${money(il.median_price)}; a home near UC Davis cost about ${dRatio} times that (${money(davis.median_price)}).</p>
+      <p>Per square foot the gap is just as clear: ${"$" + Math.round(ch.median_ppsf)} in Champaign and ${"$" + Math.round(ur.median_ppsf)} in Urbana, ${[...D.cities].sort((a, b) => a.median_ppsf - b.median_ppsf).slice(0, 2).every(c => c.campus === "Illinois") ? "the two lowest of all " + D.n_cities + " cities" : "among the lowest"}, against ${"$" + Math.round(O.median_ppsf)} overall.
+      Savoy, just south, is pricier at ${money(sv.median_price)}, with newer homes (median year built ${sv.median_year}, against ${ch.median_year} in Champaign and ${ur.median_year} in Urbana).</p>
+      <p>Homes also move fast: a median of ${days(ch.median_dom)} from listing to accepted offer in Champaign and ${days(ur.median_dom)} in Urbana. But in each city a share of sales (${ch.pct_no_list.toFixed(1)}% and ${ur.pct_no_list.toFixed(1)}%) had no listing on record, so those days-on-market figures describe only the homes that were listed.</p>`;
+  })();
+
+  // ---------- campus explorer ----------
+  const campusNames = Object.keys(D.campuses);
+  let campus = "Illinois";
+  const chips = document.getElementById("campus-chips");
+  campusNames.forEach(n => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = n === "All" ? "All campuses" : n; b.dataset.n = n;
+    b.setAttribute("aria-pressed", n === campus);
+    b.onclick = () => { campus = n; [...chips.children].forEach(x => x.setAttribute("aria-pressed", x.dataset.n === n)); drawCampus(); };
+    chips.appendChild(b);
+  });
+
+  function drawCampus() {
+    const C = D.campuses[campus];
+    document.getElementById("campus-kpis").innerHTML = [
+      [fmt(C.sales), "sales" + (campus === "All" ? "" : " in " + C.cities.join(", "))],
+      [money(C.median_price), "median sale price"],
+      ["$" + Math.round(C.median_ppsf), "median price per sq ft"],
+      [days(C.median_dom), "median days on market"],
+      [C.median_miles + " mi", "median distance to campus"],
+    ].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
+    drawBands(C); drawTrend(C);
+  }
+
+  function drawBands(C) {
+    const host = document.getElementById("band-chart"); host.innerHTML = "";
+    const bands = C.bands.filter(b => b.sales >= 30);
+    const W = 420, H = 250, left = 48, right = 8, top = 20, bottom = 34;
+    const max = niceMax(Math.max(...bands.map(b => b.median_price)));
+    const y = v => top + (1 - v / max) * (H - top - bottom);
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Median sale price by distance band" }, host);
+    const g = el("g", { class: "grid axis" }, svg);
+    for (let i = 0; i <= 4; i++) {
+      const v = max * i / 4;
+      el("line", { x1: left, x2: W - right, y1: y(v), y2: y(v) }, g);
+      el("text", { x: left - 6, y: y(v) + 4, "text-anchor": "end" }, g).textContent = moneyK(v);
+    }
+    const slot = (W - left - right) / bands.length, bw = Math.min(46, slot * 0.6);
+    const bars = el("g", {}, svg);
+    bands.forEach((b, i) => {
+      const cx = left + slot * i + slot / 2, yy = y(b.median_price), base = y(0);
+      const grp = el("g", {}, bars);
+      el("path", { class: "bar", d: barPath(cx - bw / 2, yy, bw, base - yy, 4, false), fill: "var(--series-1)" }, grp);
+      el("text", { class: "val", x: cx, y: yy - 6, "text-anchor": "middle" }, grp).textContent = moneyK(b.median_price);
+      el("text", { x: cx, y: H - bottom + 18, "text-anchor": "middle", class: "axis" }, grp).textContent = b.band;
+      const hit = el("rect", { x: cx - slot / 2, y: top, width: slot, height: H - top - bottom, fill: "transparent" }, grp);
+      hit.addEventListener("mousemove", e => { bars.classList.add("dim"); grp.querySelector(".bar").classList.add("on"); showTip(e, b.band + " from campus", [["Median price", money(b.median_price)], ["Sales", fmt(b.sales)]]); });
+      hit.addEventListener("mouseleave", () => { bars.classList.remove("dim"); grp.querySelector(".bar").classList.remove("on"); hideTip(); });
+    });
+  }
+
+  function drawTrend(C) {
+    const host = document.getElementById("trend-chart"); host.innerHTML = "";
+    const Q = C.quarters.filter(q => q.median_price != null);
+    const W = 420, H = 250, left = 48, right = 14, top = 20, bottom = 34;
+    const vals = Q.map(q => q.median_price);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const step = niceMax((hi - lo) / 4 || hi / 4);
+    lo = Math.floor(lo / step) * step - step; if (lo < 0) lo = 0;
+    hi = Math.ceil(hi / step) * step + step;
+    const x = i => left + (i / (Q.length - 1)) * (W - left - right);
+    const y = v => top + (1 - (v - lo) / (hi - lo)) * (H - top - bottom);
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Median sale price by quarter" }, host);
+    const g = el("g", { class: "grid axis" }, svg);
+    for (let v = lo; v <= hi + 1; v += step) {
+      el("line", { x1: left, x2: W - right, y1: y(v), y2: y(v) }, g);
+      el("text", { x: left - 6, y: y(v) + 4, "text-anchor": "end" }, g).textContent = moneyK(v);
+    }
+    Q.forEach((q, i) => {
+      if (q.q.endsWith("Q1") || i === 0) {
+        el("text", { x: x(i), y: H - bottom + 18, "text-anchor": "middle" }, g).textContent = q.q.slice(0, 4) + " " + q.q.slice(4);
+      }
+    });
+    el("path", { d: Q.map((q, i) => (i ? "L" : "M") + x(i) + "," + y(q.median_price)).join(""), fill: "none", stroke: "var(--series-1)", "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+    const cross = el("line", { y1: top, y2: H - bottom, stroke: "var(--text-3)", "stroke-dasharray": "3 3", opacity: 0 }, svg);
+    const dot = el("circle", { r: 5, fill: "var(--series-1)", stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg);
+    const hit = el("rect", { x: left, y: top, width: W - left - right, height: H - top - bottom, fill: "transparent" }, svg);
+    hit.addEventListener("mousemove", e => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const i = Math.max(0, Math.min(Q.length - 1, Math.round((p.x - left) / (W - left - right) * (Q.length - 1))));
+      const q = Q[i];
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
+      dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(q.median_price)); dot.setAttribute("opacity", 1);
+      showTip(e, q.q.slice(0, 4) + " " + q.q.slice(4), [["Median price", money(q.median_price)], ["Sales", fmt(q.sales)]]);
+    });
+    hit.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); hideTip(); });
+  }
+  drawCampus();
+
+  // ---------- sortable table ----------
+  const COLS = [
+    ["city", "City", r => `${r.city}, ${r.state}`],
+    ["campus", "Campus", r => r.campus],
+    ["sales", "Sales", r => fmt(r.sales)],
+    ["median_price", "Median price", r => money(r.median_price)],
+    ["p25", "25th pct", r => money(r.p25)],
+    ["p75", "75th pct", r => money(r.p75)],
+    ["median_ppsf", "$ / sq ft", r => "$" + Math.round(r.median_ppsf)],
+    ["median_sqft", "Median sq ft", r => fmt(Math.round(r.median_sqft))],
+    ["median_dom", "Days on market", r => r.median_dom],
+    ["pct_no_list", "No listing", r => r.pct_no_list.toFixed(1) + "%"],
+    ["median_miles", "Miles", r => r.median_miles.toFixed(1)],
+  ];
+  let sortKey = "median_price", sortDir = -1;
+  const table = document.getElementById("city-table");
+  function drawTable() {
+    table.tHead.innerHTML = "<tr>" + COLS.map(([k, l]) =>
+      `<th scope="col" aria-sort="${k === sortKey ? (sortDir < 0 ? "descending" : "ascending") : "none"}"><button data-k="${k}">${l}</button></th>`).join("") + "</tr>";
+    const rows = [...D.cities].sort((a, b) => {
+      const A = a[sortKey], B = b[sortKey];
+      return (typeof A === "string" ? A.localeCompare(B) : A - B) * sortDir;
+    });
+    table.tBodies[0].innerHTML = rows.map(r =>
+      `<tr class="${isIL(r) ? "il" : ""}">` + COLS.map(([, , f]) => `<td>${f(r)}</td>`).join("") + "</tr>").join("");
+    table.tHead.querySelectorAll("button").forEach(b => b.onclick = () => {
+      const k = b.dataset.k;
+      if (k === sortKey) sortDir *= -1; else { sortKey = k; sortDir = (k === "city" || k === "campus") ? 1 : -1; }
+      drawTable();
+    });
+  }
+  drawTable();
+
+  // ---------- notes ----------
+  document.getElementById("notes").innerHTML = `
+    <p><b>Price rule.</b> The raw data has some impossible prices, including a $0 sale and one at $81.5 million. Sales under ${money(D.low)} (${D.excluded_low} rows) and over ${money(D.high)} (${D.excluded_high} rows) are left out everywhere on this page, which keeps ${fmt(D.rows_kept)} of ${fmt(D.rows_total)} sales. All prices are medians, not averages, so a few extreme sales can't pull them around.</p>
+    <p><b>Days on market</b> is the number of days from <code>list_date</code> to <code>contract_date</code>, the way real estate sites count it, not to the closing date. It is computed only for the ${fmt(O.dom_n)} sales that have both dates. A blank date is never treated as zero.</p>
+    <p><b>Missing listings aren't random.</b> ${O.pct_no_list}% of sales have no list date, often off-market or builder sales of new homes, and the share varies a lot by city (see the "No listing" column). A city's days on market describes only its listed homes.</p>
+    <p><b>Price per square foot</b> uses only homes with a finished living area above 0 sq ft, since some rows report 0.</p>
+    <p><b>Campus and distance</b> come from the dataset's <code>university</code> and <code>miles_to_campus</code> columns: each home is matched to the nearest campus landmark, and the distance is straight-line, not driving distance.</p>
+    <p><b>What's not used.</b> <code>home_type</code> is left out because it labels almost everything, including condo units, as single family. Rows are never deduplicated by street address, because some addresses are condo buildings with several separate units.</p>`;
+  </script>
 </body>
 </html>
