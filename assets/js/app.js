@@ -312,7 +312,7 @@
       [int(N), 'home sales'],
       [money(median(prices)), 'median sale price'],
       [days(median(dom)), 'median days on market'],
-      ['11 · 18', 'campus areas · cities']
+      [int(PLACES.length), 'cities and towns near ' + UNIS.length + ' campuses']
     ];
     $('hero-stats').innerHTML = stats.map(function (s) {
       return '<div class="hero-stat"><span class="hero-value">' + s[0] + '</span><span class="hero-label">' + s[1] + '</span></div>';
@@ -1213,6 +1213,20 @@
     });
   }
 
+  /* ================= section highlight in the header ================= */
+  function initNav() {
+    if (!('IntersectionObserver' in window)) return;
+    var links = {};
+    document.querySelectorAll('.site-nav a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        Object.keys(links).forEach(function (k) { links[k].classList.toggle('active', k === e.target.id); });
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    Object.keys(links).forEach(function (id) { var el = $(id); if (el) obs.observe(el); });
+  }
+
   /* ================= boot ================= */
   var resizeTimer, lastW = window.innerWidth;
   window.addEventListener('resize', function () {
@@ -1235,6 +1249,7 @@
     readURL();
 
     initTheme();
+    initNav();
     initControls();
     initTable();
     syncFilterInputs();
