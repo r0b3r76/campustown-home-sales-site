@@ -1224,9 +1224,13 @@
     setTimeout(function () { $('loading').hidden = true; }, 400);
   }
 
-  fetch('data/site_data.json')
-    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(boot)
+  // Wait for the data and the web fonts, so charts measure their labels in the right font.
+  var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready.catch(function () {}) : Promise.resolve();
+  Promise.all([
+    fetch('data/site_data.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    fontsReady
+  ])
+    .then(function (res) { boot(res[0]); })
     .catch(function (e) {
       console.error(e);
       $('loading-text').textContent = 'The data could not be loaded. Please refresh the page.';
