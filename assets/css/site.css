@@ -248,6 +248,27 @@ details.numbers { margin-top: 8px; border-top: 1px solid var(--line); padding-to
 details.numbers summary { cursor: pointer; color: var(--blue); font-weight: 600; font-size: 14px; width: fit-content; }
 details.numbers[open] summary { margin-bottom: 8px; }
 
+/* Chart titles (HTML, so they wrap) */
+.chart-title { margin: 4px 0 6px; }
+.chart-title h4 { font-size: 15px; font-weight: 650; letter-spacing: -.005em; }
+.chart-title p { margin: 2px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+/* Map in both themes */
+.leaflet-container { font-family: var(--font-sans); background: var(--surface-2); }
+.leaflet-tooltip.map-tip {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18); padding: 6px 10px; font-size: 13px;
+}
+.leaflet-tooltip-top.map-tip::before { border-top-color: var(--surface); }
+.leaflet-bar a, .leaflet-bar a:hover { background: var(--surface); color: var(--ink); border-bottom-color: var(--line); }
+.leaflet-bar { border: 1px solid var(--line) !important; box-shadow: var(--shadow) !important; }
+.leaflet-control-attribution { background: color-mix(in srgb, var(--surface) 85%, transparent) !important; color: var(--muted); }
+.leaflet-control-attribution a { color: var(--blue); }
+.leaflet-interactive:focus { outline: none; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.map-legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+
 /* Prose */
 .prose p, .prose li { max-width: 72ch; }
 .prose h3 { font-family: var(--font-display); font-size: 25px; font-weight: 600; letter-spacing: -.01em; margin: 36px 0 12px; }

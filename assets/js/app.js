@@ -96,14 +96,16 @@
     return {
       ink: cssVar('ink'), muted: cssVar('muted'), line: cssVar('line'), grid: cssVar('grid'),
       surface: cssVar('surface'), quiet: cssVar('quiet'), accent: cssVar('accent'), blue: cssVar('blue'),
-      font: cssVar('font-sans') || 'system-ui, sans-serif'
+      font: cssVar('font-sans') || 'system-ui, sans-serif',
+      narrow: isNarrow()
     };
   }
   function tip(T) {
     return {
       backgroundColor: T.surface, borderColor: T.line, borderWidth: 1, padding: [8, 12],
       textStyle: { color: T.ink, fontFamily: T.font, fontSize: 13 },
-      extraCssText: 'border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);'
+      confine: true,
+      extraCssText: 'border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);max-width:280px;white-space:normal;line-height:1.5;'
     };
   }
   function titleOpt(T, text, sub) {
@@ -116,7 +118,7 @@
   function axisStyle(T) {
     return {
       axisLine: { lineStyle: { color: T.line } }, axisTick: { show: false },
-      axisLabel: { color: T.muted, fontFamily: T.font, fontSize: 12 },
+      axisLabel: { color: T.muted, fontFamily: T.font, fontSize: T.narrow ? 11 : 12, hideOverlap: true },
       splitLine: { lineStyle: { color: T.grid } },
       nameTextStyle: { color: T.muted, fontFamily: T.font, fontSize: 12 }
     };
@@ -131,13 +133,35 @@
       c.inst.resize();
     }
     c.build = build;
-    c.inst.setOption(build(theme()), true);
+    c.inst.setOption(prepare(el, build(theme())), true);
+  }
+  // Render the chart's title and subtitle as HTML above it (they wrap on phones), and free the space in the canvas.
+  function prepare(el, opt) {
+    var head = el.previousElementSibling;
+    if (!head || !head.classList.contains('chart-title')) {
+      head = document.createElement('div');
+      head.className = 'chart-title';
+      el.parentNode.insertBefore(head, el);
+    }
+    if (opt.title && opt.title.text) {
+      head.innerHTML = '<h4>' + opt.title.text + '</h4>' + (opt.title.subtext ? '<p>' + opt.title.subtext + '</p>' : '');
+      head.hidden = false;
+      var cut = opt.title.subtext ? 50 : 30;
+      if (opt.grid && typeof opt.grid.top === 'number') opt.grid.top = Math.max(opt.legend ? 30 : 10, opt.grid.top - cut);
+      delete opt.title;
+    } else {
+      head.hidden = true;
+    }
+    if (opt.xAxis && opt.xAxis.type === 'value' && opt.xAxis.splitNumber === undefined && isNarrow()) opt.xAxis.splitNumber = 3;
+    opt.animationDuration = 350;
+    opt.animationDurationUpdate = 300;
+    return opt;
   }
   function redrawAll() {
     Object.keys(charts).forEach(function (id) {
       var c = charts[id];
       c.inst.resize();
-      c.inst.setOption(c.build(theme()), true);
+      c.inst.setOption(prepare(c.inst.getDom(), c.build(theme())), true);
     });
   }
   function emptyChart(T, title, msg) {
@@ -153,7 +177,7 @@
     return {
       textStyle: { fontFamily: T.font },
       title: titleOpt(T, o.title, o.sub),
-      grid: { left: 4, right: o.right || 96, top: o.sub ? 58 : 38, bottom: 44, containLabel: true },
+      grid: { left: 4, right: T.narrow ? (o.rightNarrow || 64) : (o.right || 96), top: o.sub ? 58 : 38, bottom: 44, containLabel: true },
       tooltip: Object.assign(tip(T), { trigger: 'item', formatter: function (p) { return o.tip(p.dataIndex); } }),
       xAxis: Object.assign({}, ax, {
         type: 'value', name: o.xName, nameLocation: 'middle', nameGap: 28, min: o.xMin, max: o.xMax,
@@ -173,7 +197,7 @@
             label: { position: neg ? 'left' : 'right' }
           };
         }),
-        label: { show: true, color: T.ink, fontFamily: T.font, fontSize: 12, formatter: function (p) { return o.label(p.dataIndex); } }
+        label: { show: true, color: T.ink, fontFamily: T.font, fontSize: T.narrow ? 11 : 12, formatter: function (p) { return (T.narrow && o.labelShort ? o.labelShort : o.label)(p.dataIndex); } }
       }]
     };
   }
@@ -188,7 +212,7 @@
         data: o.values.map(function (v, i) {
           return { value: [v, i], itemStyle: { color: o.colors[i], borderColor: T.surface, borderWidth: 2 } };
         }),
-        label: { show: true, position: 'right', distance: 8, color: T.ink, fontFamily: T.font, fontSize: 12, formatter: function (p) { return o.label(p.dataIndex); } }
+        label: { show: true, position: 'right', distance: 8, color: T.ink, fontFamily: T.font, fontSize: T.narrow ? 11 : 12, formatter: function (p) { return (T.narrow && o.labelShort ? o.labelShort : o.label)(p.dataIndex); } }
       }
     ];
     opt.tooltip.formatter = function (p) { return o.tip(p.dataIndex); };
@@ -312,7 +336,7 @@
         cats: items.map(function (it) { return it.name; }), values: items.map(function (it) { return it.med; }),
         colors: items.map(function (it) { return topK.indexOf(it.k) >= 0 ? T.accent : T.quiet; }),
         xName: 'Median sale price', xFmt: moneyShort,
-        label: function (i) { return money(items[i].med); },
+        label: function (i) { return money(items[i].med); }, labelShort: function (i) { return moneyShort(items[i].med); }, rightNarrow: 48,
         tip: function (i) { return '<b>' + items[i].name + '</b><br>Median ' + money(items[i].med) + '<br>' + plural(items[i].n, 'sale'); }
       });
     }, barHeight(items.length));
@@ -405,9 +429,9 @@
           lineStyle: { color: col, width: w }, itemStyle: { color: col, borderColor: T.surface, borderWidth: 1.5 },
           z: it.move ? 3 : 2, emphasis: { focus: 'series' },
           label: {
-            show: true, fontFamily: T.font, fontSize: 12, color: it.move ? T.ink : T.muted, fontWeight: it.move ? 600 : 400,
+            show: true, fontFamily: T.font, fontSize: narrow ? 11 : 12, color: it.move ? T.ink : T.muted, fontWeight: it.move ? 600 : 400,
             formatter: function (p) {
-              if (p.dataIndex === 0) return (narrow ? '' : it.name + '  ') + it.allRank;
+              if (p.dataIndex === 0) return it.name + '  ' + it.allRank;
               return it.valRank + (narrow ? '' : '  ' + it.name) + (it.move ? (it.move > 0 ? '  ▲' : '  ▼') + Math.abs(it.move) : '');
             },
             position: [0, 0]
@@ -420,7 +444,7 @@
       return {
         textStyle: { fontFamily: T.font },
         title: titleOpt(T, 'Rank by mean sale price, all rows vs. price rule', 'Rank 1 is the highest mean. Blue moved up, coral moved down.'),
-        grid: { left: narrow ? 36 : 170, right: narrow ? 56 : 190, top: 92, bottom: 16 },
+        grid: { left: narrow ? 138 : 170, right: narrow ? 52 : 190, top: 92, bottom: 16 },
         tooltip: Object.assign(tip(T), {
           trigger: 'item', formatter: function (p) {
             var it = items.filter(function (x) { return x.name === p.seriesName; })[0];
@@ -458,7 +482,8 @@
       return hbar(T, {
         title: 'Change in median sale price, 2024 to 2025', sub: 'By campus area, sales from $10,000 to $5,000,000',
         cats: items.map(function (it) { return it.short; }), values: items.map(function (it) { return +it.chg.toFixed(4); }),
-        colors: items.map(function (it) { return it.chg < 0 ? T.accent : topK.indexOf(it.k) >= 0 ? T.blue : T.quiet; }), right: 60,
+        colors: items.map(function (it) { return it.chg < 0 ? T.accent : topK.indexOf(it.k) >= 0 ? T.blue : T.quiet; }), right: 60, rightNarrow: 48,
+        xMin: Math.min(0, Math.floor(items[items.length - 1].chg * (T.narrow ? 2.4 : 1.6))),
         xName: 'Percent change in median sale price', xFmt: function (v) { return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'; },
         label: function (i) { return pct1(items[i].chg, true); },
         tip: function (i) { var it = items[i]; return '<b>' + it.name + '</b><br>2024 median ' + money(it.m24) + ' (' + int(it.n24) + ' sales)<br>2025 median ' + money(it.m25) + ' (' + int(it.n25) + ' sales)<br>Change ' + pct1(it.chg, true); }
@@ -489,8 +514,8 @@
       var col = function (it) { return slowK.indexOf(it.k) >= 0 ? T.accent : fastK.indexOf(it.k) >= 0 ? T.blue : T.muted; };
       return {
         textStyle: { fontFamily: T.font },
-        title: titleOpt(T, 'Days on market by campus area', 'Box = middle half of sales, whiskers = 10th to 90th percentile, line = median'),
-        grid: { left: 4, right: 70, top: 58, bottom: 44, containLabel: true },
+        title: titleOpt(T, 'Days on market by campus area', 'Box shows the middle half of sales, whiskers the 10th to 90th percentile, and the line inside the box the median.'),
+        grid: { left: 4, right: T.narrow ? 76 : 90, top: 58, bottom: 44, containLabel: true },
         tooltip: Object.assign(tip(T), {
           trigger: 'item', formatter: function (p) {
             var it = items[p.dataIndex];
@@ -510,7 +535,7 @@
           {
             type: 'scatter', symbolSize: 1, silent: true, data: items.map(function (it, i) { return [it.p90, i]; }),
             itemStyle: { color: 'transparent' },
-            label: { show: true, position: 'right', distance: 8, color: T.ink, fontSize: 12, fontFamily: T.font, formatter: function (p) { return one(items[p.dataIndex].med) + ' days'; } }
+            label: { show: true, position: 'right', distance: 8, color: T.ink, fontSize: 12, fontFamily: T.font, formatter: function (p) { return 'median ' + one(items[p.dataIndex].med); } }
           }
         ]
       };
@@ -581,6 +606,7 @@
         colors: items.map(function (it) { return lowK.indexOf(it.k) >= 0 ? T.accent : T.quiet; }), right: 150,
         xName: 'Median sale price', xFmt: moneyShort,
         label: function (i) { return money(items[i].med) + ' · ' + int(items[i].n); },
+        labelShort: function (i) { return moneyShort(items[i].med) + ' · ' + int(items[i].n); }, rightNarrow: 96,
         tip: function (i) { return '<b>' + items[i].name + '</b><br>Median ' + money(items[i].med) + '<br>' + plural(items[i].n, 'sale'); }
       });
     }, barHeight(items.length));
@@ -623,7 +649,7 @@
         cats: items.map(function (it) { return it.name; }), values: items.map(function (it) { return it.med; }),
         colors: items.map(function (it) { return fastK.indexOf(it.k) >= 0 ? T.accent : T.muted; }), right: 120, xMin: 0,
         xName: 'Median days from listing to contract', xFmt: function (v) { return v; },
-        label: function (i) { return one(items[i].med) + ' · ' + int(items[i].n); },
+        label: function (i) { return one(items[i].med) + ' · ' + int(items[i].n); }, rightNarrow: 84,
         tip: function (i) { return '<b>' + items[i].name + '</b><br>Median ' + days(items[i].med) + '<br>' + plural(items[i].n, 'sale'); }
       });
     }, barHeight(items.length));
@@ -655,14 +681,14 @@
       return {
         textStyle: { fontFamily: T.font },
         title: titleOpt(T, 'Sales by month, ' + name + ', ' + y, 'All rows with a sale date'),
-        grid: { left: 16, right: 8, top: 62, bottom: 36, containLabel: true },
+        grid: { left: 40, right: 8, top: 62, bottom: 36, containLabel: true },
         tooltip: Object.assign(tip(T), { trigger: 'item', formatter: function (p) { return '<b>' + MONTHS_LONG[p.dataIndex] + ' ' + y + '</b><br>' + plural(counts[p.dataIndex], 'sale'); } }),
-        xAxis: Object.assign({}, ax, { type: 'category', data: MONTHS, name: 'Month of sale', nameLocation: 'middle', nameGap: 26, axisLabel: Object.assign({}, ax.axisLabel, { interval: 0 }) }),
-        yAxis: Object.assign({}, ax, { type: 'value', name: 'Sales', nameLocation: 'middle', nameGap: 40, minInterval: 1 }),
+        xAxis: Object.assign({}, ax, { type: 'category', data: MONTHS, name: 'Month of sale', nameLocation: 'middle', nameGap: 26, axisLabel: Object.assign({}, ax.axisLabel, { interval: 0, fontSize: T.narrow ? 10 : 12, hideOverlap: false }) }),
+        yAxis: Object.assign({}, ax, { type: 'value', name: 'Sales', nameLocation: 'middle', nameGap: 50, minInterval: 1 }),
         series: [{
           type: 'bar', barWidth: '62%', cursor: 'default',
           data: counts.map(function (v) { return { value: v, itemStyle: { color: v === mx2 && v > 0 ? T.accent : T.quiet, borderRadius: [4, 4, 0, 0] } }; }),
-          label: { show: true, position: 'top', color: T.ink, fontSize: 12, fontFamily: T.font }
+          label: { show: true, position: 'top', color: T.ink, fontSize: T.narrow ? 10 : 12, fontFamily: T.font }
         }]
       };
     });
@@ -701,15 +727,15 @@
       return {
         textStyle: { fontFamily: T.font },
         title: titleOpt(T, title, UNIS[u].short + ', up to ' + money(budget) + ', ' + minB + '+ bedrooms. Bars are half-mile bands.'),
-        grid: { left: 16, right: 16, top: 70, bottom: 40, containLabel: true },
+        grid: { left: 40, right: 16, top: 70, bottom: 40, containLabel: true },
         tooltip: Object.assign(tip(T), {
           trigger: 'item', formatter: function (p) {
             if (p.componentType === 'markLine') return 'Median ' + miles(med);
             var a = p.dataIndex * width; return '<b>' + one(a) + ' to ' + one(a + width) + ' miles</b><br>' + plural(bins[p.dataIndex], 'sale');
           }
         }),
-        xAxis: Object.assign({}, ax, { type: 'value', min: 0, max: nb * width, name: 'Miles to campus (straight line)', nameLocation: 'middle', nameGap: 26, splitLine: { show: false } }),
-        yAxis: Object.assign({}, ax, { type: 'value', name: 'Sales', nameLocation: 'middle', nameGap: 40, minInterval: 1 }),
+        xAxis: Object.assign({}, ax, { type: 'value', min: 0, max: Math.ceil(nb * width), interval: Math.ceil(nb * width) > 8 ? 2 : 1, name: 'Miles to campus (straight line)', nameLocation: 'middle', nameGap: 26, splitLine: { show: false } }),
+        yAxis: Object.assign({}, ax, { type: 'value', name: 'Sales', nameLocation: 'middle', nameGap: 50, minInterval: 1 }),
         series: [{
           type: 'bar', barWidth: '92%', cursor: 'default',
           data: bins.map(function (v, k) { return [k * width + width / 2, v]; }),
@@ -803,13 +829,12 @@
     var labels = bins.map(function (v, k) { return k === nb - 1 ? moneyShort(top) + '+' : moneyShort(k * width); });
     $('hist-sub').textContent = s.n ? where + ': ' + plural(s.n, 'sale') + ', median ' + money(s.med) + '. Bars are $50,000 bands.' : 'No sales match the filters.';
     drawChart('chart-hist', function (T) {
-      if (!s.n) return emptyChart(T, 'Sale price distribution', 'No sales match these filters');
+      if (!s.n) return emptyChart(T, '', 'No sales match these filters');
       var ax = axisStyle(T);
       var medBin = Math.min(nb - 1, Math.floor(s.med / width));
       return {
         textStyle: { fontFamily: T.font },
-        title: titleOpt(T, 'Sale price distribution'),
-        grid: { left: 16, right: 12, top: 40, bottom: 40, containLabel: true },
+        grid: { left: 40, right: 12, top: 16, bottom: 40, containLabel: true },
         tooltip: Object.assign(tip(T), {
           trigger: 'item', formatter: function (p) {
             var k = p.dataIndex;
@@ -817,7 +842,7 @@
           }
         }),
         xAxis: Object.assign({}, ax, { type: 'category', data: labels, name: 'Sale price', nameLocation: 'middle', nameGap: 26, axisLabel: Object.assign({}, ax.axisLabel, { interval: isNarrow() ? 9 : 3 }) }),
-        yAxis: Object.assign({}, ax, { type: 'value', name: 'Sales', nameLocation: 'middle', nameGap: 40, minInterval: 1 }),
+        yAxis: Object.assign({}, ax, { type: 'value', name: 'Sales', nameLocation: 'middle', nameGap: 50, minInterval: 1 }),
         series: [{
           type: 'bar', barCategoryGap: '8%', cursor: 'default',
           data: bins.map(function (v, k) { return { value: v, itemStyle: { color: k === medBin ? T.accent : T.quiet, borderRadius: [2, 2, 0, 0] } }; })
