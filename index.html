@@ -295,7 +295,9 @@
         <article class="prose" id="p2">
           <h3>P2. Working with a coding agent</h3>
           <div id="p2-text">
-            <p>[Draft to be written from Robert's own experience.]</p>
+            <p>I have used pandas and SQL in Jupyter notebooks in this class and outside of class, so I know what doing this project by hand would have involved. Most of the analysis is not complicated: Q1 is a groupby and a median, and Q5 is a date subtraction followed by a median. The problem is the number of small, tedious steps, each needing its own round of Google searching to get the code right. Q3 needs every city ranked by mean twice and the two rankings compared, and Q5 turned out to have a four-way tie for the fastest campus area that the answer has to report. Charts would have been the easy part, since I can build those quickly in Tableau. The hardest part would have been turning everything into a working website with filters, a map and answers that recalculate.</p>
+            <p>With Claude as the coding agent, my job changed from writing code to stress testing it. Claude computed every answer in pandas first and checked the site's numbers against it, but it could not see the live site the way a visitor does, so I had to make sure the backend work actually worked in the frontend. The clearest example was the map: on the published site, its background was covered in &ldquo;API KEY REQUIRED&rdquo; watermarks because the map tile service now needs a key. Claude had not caught this. I spotted it, sent a screenshot, and it switched to OpenStreetMap tiles in the next commit.</p>
+            <p>I much prefer having an AI agent do the analysis and build the website. It would be a drastic overstatement to say I could have done it any better myself, and certainly not any faster. But the agent only works well when someone checks its output where real users will see it.</p>
           </div>
         </article>
       </div>
