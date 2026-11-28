@@ -40,7 +40,7 @@ Two **insights** close the site: how blank listing dates would distort days on m
 - **Coding agent:** Claude (Claude Opus 5.5), working from screenshots of the assignment. The full log of prompts, what the agent produced and what was checked is in [`AGENT_LOG.md`](AGENT_LOG.md).
 - **Checking the numbers:** every answer was first computed independently in pandas, then the site's numbers were compared with it in a headless browser: all of Q1 to Q6, 160 random settings across Q7 to Q10, and a combined filter setting in the explore section. Any difference was treated as a bug.
 - **Site:** plain HTML, CSS and JavaScript, with no build step. All numbers are calculated in the visitor's browser from `data/site_data.json`.
-- **Libraries:** [Apache ECharts](https://echarts.apache.org/) 6.1 for charts and [Leaflet](https://leafletjs.com/) 1.9 for the map, both saved in `assets/vendor/`. Map tiles from [CARTO](https://carto.com/attributions) and [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Fonts: Fraunces and Inter (SIL Open Font License), saved in `assets/fonts/`.
+- **Libraries:** [Apache ECharts](https://echarts.apache.org/) 6.1 for charts and [Leaflet](https://leafletjs.com/) 1.9 for the map, both saved in `assets/vendor/`. Map tiles from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Fonts: Fraunces and Inter (SIL Open Font License), saved in `assets/fonts/`.
 - **Hosting:** GitHub Pages, published by `.github/workflows/pages.yml` on each push to `main`.
 
 ### Rebuilding the data file

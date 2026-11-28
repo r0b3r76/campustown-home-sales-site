@@ -859,12 +859,12 @@
     mapLayers.cities = L.layerGroup().addTo(map);
     fitAll();
   }
+  // OpenStreetMap's standard tiles: free, no API key, attribution required. Dark mode darkens them with a CSS filter.
   function setTiles() {
-    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (tileLayer) map.removeLayer(tileLayer);
-    tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd', maxZoom: 18
+    if (tileLayer) return;
+    tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
     }).addTo(map);
   }
   function fitAll() {
